@@ -19,6 +19,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,7 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 
 @Composable
-fun WelcomeScreen(navController: NavHostController) {
+fun WelcomeScreen(navController: NavHostController, isFirstTime: MutableState<Boolean>) {
     val context = LocalContext.current
     var weight by remember { mutableStateOf("") }
     var height by remember { mutableStateOf("") }
@@ -129,6 +130,7 @@ fun WelcomeScreen(navController: NavHostController) {
         Button(
             onClick = {
                 saveUserInfo(context, weight, height, activityLevel, goal, dietaryPreferences)
+                isFirstTime.value = false
                 navController.navigate(Screen.Main.route)
             },
             modifier = Modifier.fillMaxWidth()

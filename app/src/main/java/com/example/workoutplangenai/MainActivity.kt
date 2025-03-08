@@ -15,6 +15,9 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -43,18 +46,22 @@ fun Navigation() {
     val navController = rememberNavController()
     val context = LocalContext.current
 
-    val sharedPreferences = context.getSharedPreferences("user_info", Context.MODE_PRIVATE)
-    val isFirstTime = sharedPreferences.getString("weight", null) == null
+    val isFirstTime = remember { mutableStateOf(isFirstTimeUser(context)) }
 
     Scaffold(
         bottomBar = {
-            if (!isFirstTime) {
+            if (!isFirstTime.value) {
                 BottomBarNavigation(navController)
             }
         }
     ) { innerPadding ->
         NavigationGraph(navController, Modifier.padding(innerPadding), isFirstTime)
     }
+}
+
+fun isFirstTimeUser(context: Context): Boolean {
+    val sharedPreferences = context.getSharedPreferences("user_info", Context.MODE_PRIVATE)
+    return sharedPreferences.getString("weight", null) == null
 }
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
@@ -91,13 +98,13 @@ fun BottomBarNavigation(navController: NavHostController) {
 }
 
 @Composable
-fun NavigationGraph(navController: NavHostController, modifier: Modifier = Modifier, isFirstTime: Boolean) {
+fun NavigationGraph(navController: NavHostController, modifier: Modifier = Modifier, isFirstTime: MutableState<Boolean>) {
     NavHost(
         navController = navController,
-        startDestination = if (isFirstTime) Screen.Welcome.route else Screen.Main.route,
+        startDestination = if (isFirstTime.value) Screen.Welcome.route else Screen.Main.route,
         modifier = modifier,
     ) {
-        composable(Screen.Welcome.route) { WelcomeScreen(navController) }
+        composable(Screen.Welcome.route) { WelcomeScreen(navController, isFirstTime) }
         composable(Screen.Main.route) { MainScreen(navController) }
     }
 }

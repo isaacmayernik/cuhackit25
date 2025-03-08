@@ -9,11 +9,6 @@ secret_access_key = os.getenv('AWS_SECRET_ACCESS_KEY')
 session_token = os.getenv('AWS_SESSION_TOKEN')
 region = os.getenv('AWS_REGION')
 
-print(access_key_id)
-print(secret_access_key)
-print(region)
-
-
 bedrock_runtime = boto3.client(
     'bedrock-runtime',
     aws_access_key_id=access_key_id,
@@ -22,7 +17,7 @@ bedrock_runtime = boto3.client(
     region_name=region
 )
 
-prompt = " Generate a 7-day workout plan for a beginner"
+prompt = ""
 
 body = {
     "inputText": prompt,
@@ -41,11 +36,9 @@ try:
         accept = "application/json"
     )
      
-
     response_body = json.loads(response['body'].read())
     generated_text = response_body['results'][0]['outputText']
-    print("Generated Text:", generated_text)
-    print("Response: ", response)
+    print(generated_text)
 except Exception as e:
     print("Error invoking Titan G1 Express:", e)
    
