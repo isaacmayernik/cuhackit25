@@ -17,21 +17,22 @@ bedrock_runtime = boto3.client(
     region_name=region
 )
 
-prompt = ""
-
-body = {
-    "inputText": prompt,
-    "textGenerationConfig":{
-        "maxTokenCount": 512,
-        "temperature": 0.7,
-        "topP": 0.9
+def generate_workout_plan(prompt:str) -> str:
+    body = {
+        "inputText": prompt,
+        "textGenerationConfig":
+        {
+            "maxTokenCount": 512,
+            "temperature": 0.7,
+            "topP": 0.9
     }
-}
+ }
+
 
 try:
     response = bedrock_runtime.invoke_model(
         modelId= "amazon.titan-text-express-v1",
-        body = json.dumps(body),
+        body = json.dumps(generate_workout_plan),
         contentType = "application/json",
         accept = "application/json"
     )
