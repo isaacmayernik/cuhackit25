@@ -41,7 +41,8 @@ android {
 
 dependencies {
     implementation(libs.androidx.navigation.compose)
-    implementation(libs.gson)
+    implementation(libs.okhttp)
+    implementation(libs.kotlinx.coroutines.android)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

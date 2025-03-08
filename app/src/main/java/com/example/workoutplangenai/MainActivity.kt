@@ -67,6 +67,7 @@ fun isFirstTimeUser(context: Context): Boolean {
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     data object Main : Screen("home", "Main Screen", Icons.Default.Home)
     data object Welcome : Screen("welcome", "Welcome Screen", Icons.Default.Star)
+    data object WorkoutPlan : Screen("workout_plan", "Workout Plan", Icons.Default.Star)
 }
 
 @Composable
@@ -106,10 +107,20 @@ fun NavigationGraph(navController: NavHostController, modifier: Modifier = Modif
     ) {
         composable(Screen.Welcome.route) { WelcomeScreen(navController, isFirstTime) }
         composable(Screen.Main.route) { MainScreen(navController) }
+        composable(Screen.WorkoutPlan.route) { WorkoutPlanScreen(navController) }
+        composable("workout_plan_detail/{planId}") { backStackEntry ->
+            val planId = backStackEntry.arguments?.getString("planId") ?: ""
+            WorkoutPlanDetailsScreen(navController, planId)
+        }
     }
 }
 
 @Composable
 fun MainScreen(navController: NavHostController) {
     Main(navController)
+}
+
+@Composable
+fun WorkoutPlanScreen(navController: NavHostController) {
+    GeneratePlan(navController)
 }
