@@ -1,5 +1,6 @@
 package com.example.workoutplangenai
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -7,6 +8,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -15,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -38,15 +41,25 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun Navigation() {
     val navController = rememberNavController()
+    val context = LocalContext.current
+
+    val sharedPreferences = context.getSharedPreferences("user_info", Context.MODE_PRIVATE)
+    val isFirstTime = sharedPreferences.getString("weight", null) == null
+
     Scaffold(
-        bottomBar = { BottomBarNavigation(navController) }
+        bottomBar = {
+            if (!isFirstTime) {
+                BottomBarNavigation(navController)
+            }
+        }
     ) { innerPadding ->
-        NavigationGraph(navController, Modifier.padding(innerPadding))
+        NavigationGraph(navController, Modifier.padding(innerPadding), isFirstTime)
     }
 }
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     data object Main : Screen("home", "Main Screen", Icons.Default.Home)
+    data object Welcome : Screen("welcome", "Welcome Screen", Icons.Default.Star)
 }
 
 @Composable
@@ -78,17 +91,18 @@ fun BottomBarNavigation(navController: NavHostController) {
 }
 
 @Composable
-fun NavigationGraph(navController: NavHostController, modifier: Modifier = Modifier) {
+fun NavigationGraph(navController: NavHostController, modifier: Modifier = Modifier, isFirstTime: Boolean) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Main.route,
+        startDestination = if (isFirstTime) Screen.Welcome.route else Screen.Main.route,
         modifier = modifier,
     ) {
+        composable(Screen.Welcome.route) { WelcomeScreen(navController) }
         composable(Screen.Main.route) { MainScreen(navController) }
     }
 }
 
 @Composable
 fun MainScreen(navController: NavHostController) {
-
+    Main(navController)
 }
