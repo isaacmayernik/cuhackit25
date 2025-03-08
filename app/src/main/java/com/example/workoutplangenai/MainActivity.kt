@@ -28,11 +28,15 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.workoutplangenai.ui.theme.WorkoutPlanGenAITheme
+import okhttp3.OkHttpClient
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        Logger.getLogger(OkHttpClient::class.java.name).level = Level.FINE
         setContent {
             WorkoutPlanGenAITheme {
                 Navigation()
@@ -74,6 +78,7 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
 fun BottomBarNavigation(navController: NavHostController) {
     val items = listOf (
         Screen.Main,
+        Screen.WorkoutPlan
     )
 
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route

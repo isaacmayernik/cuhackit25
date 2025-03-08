@@ -17,17 +17,69 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
+import java.util.concurrent.TimeUnit
+
+suspend fun generateWorkoutPlan(prompt: String): WorkoutPlan {
+    return withContext(Dispatchers.IO) {
+        try {
+            val client = OkHttpClient().newBuilder()
+                .connectTimeout(60, TimeUnit.SECONDS)
+                .readTimeout(60, TimeUnit.SECONDS)
+                .writeTimeout(60, TimeUnit.SECONDS)
+                .build()
+
+            val mediaType = "application/json".toMediaType()
+            val jsonBody = """
+            {
+                "prompt": "$prompt"
+            }
+            """.trimIndent()
+            println("JSON Body: $jsonBody") // Log the JSON body for debugging
+
+            val requestBody = jsonBody.toRequestBody(mediaType)
+            val request = Request.Builder()
+                .url("http://10.0.2.2:5000/generate-workout-plan")
+                .post(requestBody)
+                .build()
+
+            val response: Response = client.newCall(request).execute()
+            response.use {
+                if (response.isSuccessful) {
+                    val responseBody = response.body?.string()
+                    val generatedText = responseBody?.substringAfter("\"workout_plan\":\"")?.substringBefore("\"")
+                        ?: "Failed to generate workout plan."
+                    WorkoutPlan(System.currentTimeMillis().toString(), generatedText)
+                } else {
+                    val errorMessage = "Error: ${response.code} - ${response.message}"
+                    WorkoutPlan(System.currentTimeMillis().toString(), errorMessage)
+                }
+            }
+        } catch (e: Exception) {
+            WorkoutPlan(System.currentTimeMillis().toString(), "Error: ${e.message}")
+        }
+    }
+}
 
 @Composable
 fun GeneratePlan(navController: NavHostController) {
     val context = LocalContext.current
     var workoutPlans by remember { mutableStateOf(getSavedWorkoutPlans(context)) }
+    val coroutineScope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
@@ -57,12 +109,17 @@ fun GeneratePlan(navController: NavHostController) {
 
         FloatingActionButton(
             onClick = {
-                val userInfo = getUserInfo(context)
-                val prompt = generatePrompt(userInfo)
-                val generatedPlan = generateWorkoutPlan(prompt)
+                coroutineScope.launch {
+                    val userInfo = getUserInfo(context)
+                    val prompt = generatePrompt(userInfo)
+                    println("Generated prompt: $prompt")
+                    val generatedPlan = generateWorkoutPlan(prompt)
 
-                saveWorkoutPlan(context, generatedPlan)
-                workoutPlans = getSavedWorkoutPlans(context)
+                    if (generatedPlan.content.isNotEmpty()) {
+                        saveWorkoutPlan(context, generatedPlan)
+                        workoutPlans = getSavedWorkoutPlans(context)
+                    }
+                }
             },
             modifier = Modifier
                 .padding(16.dp)
@@ -82,11 +139,10 @@ fun generatePrompt(userInfo: UserInfo): String {
         - Activity level: ${userInfo.activityLevel}
         - Goal: ${userInfo.goal}
         - Dietary Preferences: ${userInfo.dietaryPreferences.joinToString(", ")}
-    """.trimIndent()
-}
-fun generateWorkoutPlan(prompt: String): WorkoutPlan {
-    val generatedContent = "Generated workout plan based on $prompt"
-    return WorkoutPlan(System.currentTimeMillis().toString(), generatedContent)
+    """
+        .trimIndent()
+        .replace("\"", "\\\"")
+        .replace("\n", "\\n")
 }
 
 fun saveWorkoutPlan(context: Context, plan: WorkoutPlan) {

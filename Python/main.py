@@ -23,6 +23,9 @@ bedrock_runtime = boto3.client(
 @app.route('/generate-workout-plan', methods=['POST'])
 def generate_workout_plan():
     data = request.json
+    if not data or 'prompt' not in data:
+        return jsonify({"error": "Missing or invalid 'prompt' field"}), 400
+    
     prompt = data.get('prompt', '')
 
     body = {
