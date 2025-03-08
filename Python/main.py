@@ -6,6 +6,7 @@ import json
 load_dotenv()
 access_key_id = os.getenv('AWS_ACCESS_KEY_ID')
 secret_access_key = os.getenv('AWS_SECRET_ACCESS_KEY')
+session_token = os.getenv('AWS_SESSION_TOKEN')
 region = os.getenv('AWS_REGION')
 
 print(access_key_id)
@@ -17,6 +18,7 @@ bedrock_runtime = boto3.client(
     'bedrock-runtime',
     aws_access_key_id=access_key_id,
     aws_secret_access_key=secret_access_key,
+    aws_session_token=session_token,
     region_name=region
 )
 
@@ -40,10 +42,10 @@ try:
     )
      
 
-    response_body = json.loiads(response['body'].read())
+    response_body = json.loads(response['body'].read())
     generated_text = response_body['results'][0]['outputText']
     print("Generated Text:", generated_text)
     print("Response: ", response)
 except Exception as e:
-    print("Error invoking Titan G1 Express:",e)
+    print("Error invoking Titan G1 Express:", e)
    
