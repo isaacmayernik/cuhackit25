@@ -1,7 +1,9 @@
+from flask import Flask, request, jsonify
 import os
 import boto3
-from dotenv import load_dotenv
 import json
+
+app = Flask(__name__)
 
 load_dotenv()
 access_key_id = os.getenv('AWS_ACCESS_KEY_ID')
@@ -17,29 +19,33 @@ bedrock_runtime = boto3.client(
     region_name=region
 )
 
-def generate_workout_plan(prompt:str) -> str:
+@app.route('/generate-workout-plan', methods=['POST'])
+def generate_workout_plan():
+    data = request.json
+    prompt = data.get('prompt', '')
+
     body = {
         "inputText": prompt,
-        "textGenerationConfig":
-        {
+        "textGenerationConfig": {
             "maxTokenCount": 512,
             "temperature": 0.7,
             "topP": 0.9
+        }
     }
- }
 
+    try:
+        response = bedrock_runtime.invoke_model(
+            modelId="amazon.titan-text-express-v1",
+            body=json.dumps(body),
+            contentType="application/json",
+            accept="application/json"
+        )
 
-try:
-    response = bedrock_runtime.invoke_model(
-        modelId= "amazon.titan-text-express-v1",
-        body = json.dumps(generate_workout_plan),
-        contentType = "application/json",
-        accept = "application/json"
-    )
-     
-    response_body = json.loads(response['body'].read())
-    generated_text = response_body['results'][0]['outputText']
-    print(generated_text)
-except Exception as e:
-    print("Error invoking Titan G1 Express:", e)
-   
+        response_body = json.loads(response['body'].read())
+        generated_text = response_body['results'][0]['outputText']
+        return jsonify({"workout_plan": generated_text})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
