@@ -90,7 +90,7 @@ fun BottomBarNavigation(navController: NavHostController) {
                     navController.navigate(screen.route) {
                         popUpTo(navController.graph.findStartDestination().id) {
                             saveState = true
-                            inclusive = false
+                            inclusive = true
                         }
                         launchSingleTop = true
                         restoreState = true
