@@ -28,17 +28,28 @@ def generate_workout_plan():
     
     prompt = data.get('prompt', '')
 
-    # Simulate a response
-    generated_text = """
-    Here is a sample workout plan:
-    - Day 1: Cardio
-    - Day 2: Strength Training
-    - Day 3: Rest
-    - Day 4: Yoga
-    - Day 5: HIIT
-    """
+    body = {
+        "inputText": prompt,
+        "textGenerationConfig": {
+            "maxTokenCount": 512,
+            "temperature": 0.7,
+            "topP": 0.9
+        }
+    }
 
-    return jsonify({"workout_plan": generated_text})
+    try:
+        response = bedrock_runtime.invoke_model(
+            modelId="amazon.titan-text-express-v1",
+            body=json.dumps(body),
+            contentType="application/json",
+            accept="application/json"
+        )
+
+        response_body = json.loads(response['body'].read())
+        generated_text = response_body['results'][0]['outputText']
+        return jsonify({"workout_plan": generated_text})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
