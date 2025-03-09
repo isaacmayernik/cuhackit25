@@ -1,6 +1,7 @@
 package com.example.workoutplangenai
 
 import android.content.Context
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -49,7 +50,6 @@ suspend fun generateWorkoutPlan(prompt: String): WorkoutPlan {
                 "prompt": "$prompt"
             }
             """.trimIndent()
-            println("JSON Body: $jsonBody") // Log the JSON body for debugging
 
             val requestBody = jsonBody.toRequestBody(mediaType)
             val request = Request.Builder()
@@ -63,7 +63,7 @@ suspend fun generateWorkoutPlan(prompt: String): WorkoutPlan {
                     val responseBody = response.body?.string()
                     val generatedText = responseBody?.substringAfter("\"workout_plan\":\"")?.substringBefore("\"")
                         ?: "Failed to generate workout plan."
-                    WorkoutPlan(System.currentTimeMillis().toString(), generatedText)
+                    WorkoutPlan(System.currentTimeMillis().toString(), generatedText.replace("\\n", "\n"))
                 } else {
                     val errorMessage = "Error: ${response.code} - ${response.message}"
                     WorkoutPlan(System.currentTimeMillis().toString(), errorMessage)
@@ -81,28 +81,32 @@ fun GeneratePlan(navController: NavHostController) {
     var workoutPlans by remember { mutableStateOf(getSavedWorkoutPlans(context)) }
     val coroutineScope = rememberCoroutineScope()
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text(
-            text = "Generated Workout Plans",
-            style = MaterialTheme.typography.headlineMedium
-        )
-        Spacer(modifier = Modifier.height(16.dp))
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Text(
+                text = "Generated Workout Plans",
+                style = MaterialTheme.typography.headlineMedium
+            )
+            Spacer(modifier = Modifier.height(16.dp))
 
-        LazyColumn {
-            items(workoutPlans) { plan ->
-                Button(
-                    onClick = {
-                        navController.navigate("workout_plan_detail/${plan.id}")
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
-                ) {
-                            Text("Workout Plan ${plan.id}")
+            LazyColumn {
+                items(workoutPlans) { plan ->
+                    Button(
+                        onClick = {
+                            navController.navigate("workout_plan_detail/${plan.id}")
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                    ) {
+                        Text(formatPlanById(plan.id))
+                    }
                 }
             }
         }
@@ -112,7 +116,6 @@ fun GeneratePlan(navController: NavHostController) {
                 coroutineScope.launch {
                     val userInfo = getUserInfo(context)
                     val prompt = generatePrompt(userInfo)
-                    println("Generated prompt: $prompt")
                     val generatedPlan = generateWorkoutPlan(prompt)
 
                     if (generatedPlan.content.isNotEmpty()) {
@@ -122,13 +125,12 @@ fun GeneratePlan(navController: NavHostController) {
                 }
             },
             modifier = Modifier
+                .align(Alignment.BottomEnd)
                 .padding(16.dp)
-                .align(Alignment.End)
         ) {
             Text("Generate Plan")
         }
     }
-
 }
 
 fun generatePrompt(userInfo: UserInfo): String {
@@ -157,6 +159,17 @@ fun getSavedWorkoutPlans(context: Context): List<WorkoutPlan> {
     val sharedPreferences = context.getSharedPreferences("workout_plans", Context.MODE_PRIVATE)
     return sharedPreferences.all.map { (id, content) ->
         WorkoutPlan(id, content.toString())
+    }
+}
+
+fun formatPlanById(id: String): String {
+    return try {
+        val timestamp = id.toLong()
+        val date = java.util.Date(timestamp)
+        val formatter = java.text.SimpleDateFormat("MM-dd-yyyy HH:mm:ss", java.util.Locale.getDefault())
+        "${formatter.format(date)} $id"
+    } catch (e: Exception) {
+        "Invalid Plan ID"
     }
 }
 
